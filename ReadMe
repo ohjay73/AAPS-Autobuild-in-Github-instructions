@@ -3,6 +3,8 @@ This process has instructions explicite for a certain build of AIMI's version of
 
 you will need to build your own or edit the autobuild.yaml in the workflows directory for this to work. There is an example on this site if you want to use it. 
 
+These instructions assume you have a PC and are familiar with powershell and have built the app previously and have an existing keystore. 
+
 
 How to setup workflows for AIMI
 
