@@ -1,0 +1,223 @@
+
+This process has instructions explicite for a certain build of AIMI's version of AAPS but can be used for any AAPS as long as you change the repro or information related to a specific branch
+
+
+How to setup workflows for AIMI
+
+Download fork of AIMI 
+
+goto:
+https://github.com/MTR93600/OpenApsAIMI
+
+Click FORK and pull entire code repro. Look for the check box to stop from only downloading master
+
+Confirm you are in your own Report and that all of the branches are available to you. I use dev_OAPSAIMI_V3_DBA2_70-120 for my builds but yours may vary. It's important to be on the branch you want to build. 
+
+Creating secrets
+
+If you've ever built AAPS in Android studio you should have already created a keystore file. Find it now. If you have never created one, please reference the AAPS documentation to do so. 
+
+Take that file and place it in the C:\Users\YOURUSERNAMEHERE\ directory
+
+Open powershell and type the command [Convert]::ToBase64String([IO.File]::ReadAllBytes("NAMEOFYOURKEYSTOREHERE")) | Set-Clipboard
+
+If it works correctly it shoudl just drop to cursor in the next field. 
+
+Open a notepad and paste the output - this will be the base 64 output you'll need in secrets. I suggest you save this somewhere safe. 
+
+You'll need the attributes you used when creating your keystore for these fields
+
+key store password
+Key alias
+Key password
+
+Goto Settings on the left side of the screen
+
+Go down to Secrets and Variables --> Actions
+
+Click New repository secret and create each of the below
+Name = KEYSTORE_BASE64 <-- This is where you will paste the base64 output into the secrets field that you created above
+Name = KEYSTORE_PASSWORD <-- in the secrets field add your key store password
+Name = KEY_ALIAS <-- in the secrets field add your key alias
+Name = KEY_PASSWORD <-- in the secrets field add your Key password
+
+Under Actions
+
+Click 
+
+Enable Workflows
+
+Now whenever you pull your repro a new build will be created. This takes 10-15 minutes and you can download the zipped version of the APK from the web or mobile version of git that you prefer. 
+
+
+
+On the left side under Actions you'll see all workflows and "Android Build (Signed)" This is the yaml file which contains all of your work flow and its default is to build the main app and wear app. If you want to add the aapsclient app you'll have to edit this file and add the below. 
+
+Click on "Android Build (Signed)" and then in the middle of the screen at the top you'll see "android-build.yml" click on it. 
+
+The branch will default to master so please select the branch you want to use. 
+
+You'll have to edit these fields
+
+
+Old 
+
+    env:
+      APP_APK_PATH: app/build/outputs/apk/full/release/app-full-release.apk
+      WEAR_APK_PATH: wear/build/outputs/apk/full/release/wear-full-release.apk
+
+New 
+
+    env:
+      APP_APK_PATH: app/build/outputs/apk/full/release/app-full-release.apk
+      CLIENT_APK_PATH: app/build/outputs/apk/aapsclient/release/app-aapsclient-release.apk
+      WEAR_APK_PATH: wear/build/outputs/apk/full/release/wear-full-release.apk
+
+
+Old
+
+      # 6. Construire les APKs en mode release (signés)
+      - name: Build Release APKs
+        run: ./gradlew :app:assembleFullRelease :wear:assembleFullRelease
+        env:
+          KEYSTORE_FILE: ${{ github.workspace }}/monkeystore.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+		  
+New 
+
+      # 6. Construire les APKs en mode release (signés)
+      - name: Build Release APKs
+        run: ./gradlew :app:assembleFullRelease :wear:assembleFullRelease :app:assembleAapsClientRelease
+        env:
+          KEYSTORE_FILE: ${{ github.workspace }}/monkeystore.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+Old
+
+	      # 7. Vérifier la génération des APKs
+      - name: Verify APK Generation
+        run: |
+          echo "Listing APKs in app module:"
+          find app/build/outputs/apk -type f -name "*.apk"
+          echo "Listing APKs in wear module:"
+          find wear/build/outputs/apk -type f -name "*.apk"	  
+
+
+
+New
+
+      # 7. Vérifier la génération des APKs
+      - name: Verify APK Generation
+        run: |
+          echo "Listing APKs in app module:"
+          find app/build/outputs/apk -type f -name "*.apk"
+          echo "Listing APKs in wear module:"
+          find wear/build/outputs/apk -type f -name "*.apk"
+          echo "Listing APKs in client module:"
+          find app/build/outputs/apk -type f -name "*.apk"
+
+
+Old
+      # 8. Optionnel : Upload des APKs en tant qu'artefacts
+      - name: Upload App APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-full-release.apk
+          path: ${{ env.APP_APK_PATH }}
+
+      - name: Upload Wear APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: wear-full-release.apk
+          path: ${{ env.WEAR_APK_PATH }}
+
+New
+
+      # 8. Optionnel : Upload des APKs en tant qu'artefacts
+      - name: Upload App APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-full-release.apk
+          path: ${{ env.APP_APK_PATH }}
+
+      - name: Upload Wear APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: wear-full-release.apk
+          path: ${{ env.WEAR_APK_PATH }}
+
+      - name: Upload AAPS Client APK
+        uses: actions/upload-artifact@v4
+        with:
+            name: app-aapsclient-release.apk
+            path: ${{ env.CLIENT_APK_PATH }}
+			
+Old
+
+      # 9. Optionnel : Créer une Release GitHub et y attacher les APKs
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref }}
+          name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload App APK to Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ env.APP_APK_PATH }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Wear APK to Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ env.WEAR_APK_PATH }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+		  
+			
+New
+
+
+      # 9. Optionnel : Créer une Release GitHub et y attacher les APKs
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref }}
+          name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload App APK to Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files:
+            ${{ env.APP_APK_PATH }}
+            ${{ env.CLIENT_APK_PATH }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Wear APK to Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ env.WEAR_APK_PATH }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
