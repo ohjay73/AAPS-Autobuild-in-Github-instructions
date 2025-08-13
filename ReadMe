@@ -1,9 +1,10 @@
 
 This process has instructions explicite for a certain build of AIMI's version of AAPS but can be used for any AAPS as long as you change the repro or information related to a specific branch
 
-you will need to build your own or edit the autobuild.yaml in the workflows directory for this to work. There is an example on this site if you want to use it. 
+you will need to build your own or edit the autobuild.yaml in the workflows directory for this to work. There is an example on this site if you want to use it. The Script edits mentioned below are for an existing workflow. The file does all the work for you, you simply need to change the repo and branch names to make it work. 
 
 These instructions assume you have a PC and are familiar with powershell and have built the app previously and have an existing keystore. 
+
 
 
 How to setup workflows for AIMI
@@ -15,7 +16,7 @@ https://github.com/MTR93600/OpenApsAIMI
 
 Click FORK and pull entire code repro. Look for the check box to stop from only downloading master
 
-Confirm you are in your own Report and that all of the branches are available to you. I use dev_OAPSAIMI_V3_DBA2_70-120 for my builds but yours may vary. It's important to be on the branch you want to build. 
+Confirm you are in your own Repo and that all of the branches are available to you. I use dev_OAPSAIMI_V3_DBA2_70-120 for my builds but yours may vary. It's important to be on the branch you want to build. 
 
 Creating secrets
 
