@@ -1,6 +1,8 @@
 
 This process has instructions explicite for a certain build of AIMI's version of AAPS but can be used for any AAPS as long as you change the repro or information related to a specific branch
 
+you will need to build your own or edit the autobuild.yaml in the workflows directory for this to work. There is an example on this site if you want to use it. 
+
 
 How to setup workflows for AIMI
 
